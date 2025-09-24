@@ -4,6 +4,8 @@ services:
     image: postgres:15-alpine
     container_name: postgres-db-prod
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: telegram_bot
       POSTGRES_USER: postgres
@@ -28,6 +30,8 @@ services:
       dockerfile: Dockerfile
     container_name: telegram-bot-prod
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       TELEGRAM_BOT_TOKEN: ${BOT_TOKEN}
       DB_HOST: postgres
@@ -46,6 +50,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: pgadmin-prod
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
@@ -67,6 +73,8 @@ services:
       dockerfile: Dockerfile
     container_name: telegram-api-prod
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
