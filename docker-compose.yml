@@ -2,14 +2,14 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: postgres-db
+    container_name: postgres-db-prod
     restart: unless-stopped
     environment:
       POSTGRES_DB: telegram_bot
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432" # Только локальный доступ
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./db-init:/docker-entrypoint-initdb.d
@@ -26,14 +26,14 @@ services:
     build:
       context: ./telegram-bot
       dockerfile: Dockerfile
-    container_name: telegram-bot
+    container_name: telegram-bot-prod
     restart: unless-stopped
     environment:
       TELEGRAM_BOT_TOKEN: ${BOT_TOKEN}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: password
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: telegram_bot
     depends_on:
       postgres:
@@ -44,14 +44,14 @@ services:
   # pgAdmin - Web-based PostgreSQL administration
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: pgadmin
+    container_name: pgadmin-prod
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
       PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
-      - "5050:80"
+      - "127.0.0.1:5051:80" # Только локальный доступ
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     networks:
@@ -60,14 +60,66 @@ services:
       postgres:
         condition: service_healthy
 
+  # API Service (Gin)
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: telegram-api-prod
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: telegram_bot
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      TELEGRAM_BOT_TOKEN: ${BOT_TOKEN}
+      API_PORT: 8080
+      AI_MODEL: deepseek/deepseek-chat-v3.1:free
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro # SSL сертификаты
+    depends_on:
+      - api
+      - mini-app
+    networks:
+      - app-network
+
   # Mini App (React)
   mini-app:
     build:
       context: ./mini-app
       dockerfile: Dockerfile
-    container_name: mini-app
-    ports:
-      - "3000:80"
+    container_name: mini-app-prod
     restart: unless-stopped
     environment:
       - NODE_ENV=production
