@@ -16,10 +16,12 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => {
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (messages && messages.length > 0) {
+      scrollToBottom();
+    }
   }, [messages]);
 
-  if (messages.length === 0 && !isLoading) {
+  if (!messages || messages.length === 0) {
     return (
       <Box
         style={{
@@ -45,7 +47,7 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => {
   return (
     <ScrollArea style={{ height: "100%" }}>
       <Box style={{ padding: "1rem", minHeight: "100%" }}>
-        {messages.map((message) => (
+        {messages?.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
         {isLoading && (

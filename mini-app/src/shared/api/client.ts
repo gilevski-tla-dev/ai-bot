@@ -54,11 +54,16 @@ class ApiClient {
   }
 
   async getChatHistory(): Promise<Message[]> {
-    const response = await this.client.get<{
-      messages: Message[];
-      count: number;
-    }>("/history");
-    return response.data.messages;
+    try {
+      const response = await this.client.get<{
+        messages: Message[];
+        count: number;
+      }>("/history");
+      return response.data.messages || [];
+    } catch (error) {
+      console.error("Failed to get chat history:", error);
+      return [];
+    }
   }
 
   async getUserStats(): Promise<UserStats> {
