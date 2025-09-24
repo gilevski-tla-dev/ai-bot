@@ -54,13 +54,27 @@ class ApiClient {
   }
 
   async getChatHistory(): Promise<Message[]> {
-    const response = await this.client.get<Message[]>("/history");
-    return response.data;
+    const response = await this.client.get<{
+      messages: Message[];
+      count: number;
+    }>("/history");
+    return response.data.messages;
   }
 
   async getUserStats(): Promise<UserStats> {
-    const response = await this.client.get<UserStats>("/stats");
-    return response.data;
+    const response = await this.client.get<{
+      daily_messages: number;
+      daily_limit: number;
+      remaining: number;
+    }>("/stats");
+
+    // Преобразуем формат данных API в формат фронтенда
+    return {
+      userID: 0, // Будет установлено из контекста Telegram
+      messagesToday: response.data.daily_messages,
+      dailyLimit: response.data.daily_limit,
+      messagesRemaining: response.data.remaining,
+    };
   }
 
   // Health check
