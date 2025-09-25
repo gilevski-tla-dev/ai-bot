@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"telegram-api/services"
@@ -38,6 +39,8 @@ func AuthMiddleware(telegramAuth *services.TelegramAuthService) gin.HandlerFunc 
 		c.Set("username", webAppData.Username)
 		c.Set("first_name", webAppData.FirstName)
 		c.Set("last_name", webAppData.LastName)
+
+		log.Printf("Auth middleware: set UserID=%d in context for %s", webAppData.UserID, webAppData.Username)
 
 		c.Next()
 	}

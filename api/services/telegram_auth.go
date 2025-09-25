@@ -4,7 +4,9 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 	"sort"
 	"strconv"
@@ -74,16 +76,25 @@ func (s *TelegramAuthService) ValidateWebAppData(initData string) (*models.Teleg
 		Hash: hash,
 	}
 
-	// Парсим остальные поля
-	if userIDStr := params.Get("user"); userIDStr != "" {
-		if userID, err := strconv.ParseInt(userIDStr, 10, 64); err == nil {
-			webAppData.UserID = userID
+	// Парсим данные пользователя из JSON
+	if userDataStr := params.Get("user"); userDataStr != "" {
+		var userData struct {
+			ID        int64  `json:"id"`
+			Username  string `json:"username"`
+			FirstName string `json:"first_name"`
+			LastName  string `json:"last_name"`
+		}
+
+		if err := json.Unmarshal([]byte(userDataStr), &userData); err == nil {
+			webAppData.UserID = userData.ID
+			webAppData.Username = userData.Username
+			webAppData.FirstName = userData.FirstName
+			webAppData.LastName = userData.LastName
+			log.Printf("Telegram auth: extracted UserID=%d, Username=%s", userData.ID, userData.Username)
+		} else {
+			log.Printf("Telegram auth: failed to parse user data: %v", err)
 		}
 	}
-
-	webAppData.Username = params.Get("username")
-	webAppData.FirstName = params.Get("first_name")
-	webAppData.LastName = params.Get("last_name")
 	webAppData.AuthDate = authDate
 
 	return webAppData, nil
