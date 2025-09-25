@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 
@@ -26,7 +27,16 @@ func NewOpenRouterService(apiKey, url, model string) *OpenRouterService {
 		url:    url,
 		model:  model,
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 15 * time.Second,
+			Transport: &http.Transport{
+				DialContext: (&net.Dialer{
+					Timeout:   5 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).DialContext,
+				MaxIdleConns:        10,
+				IdleConnTimeout:     90 * time.Second,
+				TLSHandshakeTimeout: 5 * time.Second,
+			},
 		},
 	}
 }
@@ -37,7 +47,7 @@ func (s *OpenRouterService) SendMessage(messages []*models.Message) (*models.Mes
 	request := models.OpenRouterRequest{
 		Model:       s.model,
 		Messages:    make([]models.Message, len(messages)),
-		MaxTokens:   1000,
+		MaxTokens:   500,
 		Temperature: 0.7,
 	}
 
