@@ -1,5 +1,4 @@
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: postgres-db-prod
@@ -11,7 +10,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "127.0.0.1:5433:5432" # Только локальный доступ
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./db-init:/docker-entrypoint-initdb.d
@@ -23,7 +22,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Telegram Bot
   telegram-bot:
     build:
       context: ./telegram-bot
@@ -45,7 +43,6 @@ services:
     networks:
       - app-network
 
-  # pgAdmin - Web-based PostgreSQL administration
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin-prod
@@ -57,7 +54,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
       PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
-      - "127.0.0.1:5051:80" # Только локальный доступ
+      - "127.0.0.1:5051:80"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     networks:
@@ -66,7 +63,6 @@ services:
       postgres:
         condition: service_healthy
 
-  # API Service (Gin)
   api:
     build:
       context: ./api
@@ -105,7 +101,6 @@ services:
       retries: 3
       start_period: 40s
 
-  # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: nginx-proxy-prod
@@ -115,14 +110,24 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro # SSL сертификаты
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - api
       - mini-app
     networks:
       - app-network
 
-  # Mini App (React)
+  certbot:
+    image: certbot/certbot
+    container_name: certbot-prod
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email ${SSL_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN}
+    profiles:
+      - ssl-init
+
   mini-app:
     build:
       context: ./mini-app
