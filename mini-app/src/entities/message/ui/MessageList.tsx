@@ -46,7 +46,14 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => {
 
   return (
     <ScrollArea style={{ height: "100%" }}>
-      <Box style={{ padding: "1rem", minHeight: "100%" }}>
+      <Box
+        style={{
+          padding: "1rem",
+          minHeight: "100%",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {messages?.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
@@ -55,6 +62,7 @@ export const MessageList = ({ messages, isLoading }: MessageListProps) => {
             style={{
               alignSelf: "flex-start",
               maxWidth: "80%",
+              marginBottom: "0.75rem",
             }}
           >
             <Box

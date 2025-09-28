@@ -15,6 +15,7 @@ export const useSendMessage = () => {
 
   return useMutation({
     mutationFn: (data: ChatRequest) => apiClient.sendMessage(data),
+    retry: false, // Отключаем retry для отправки сообщений
     onSuccess: () => {
       // Инвалидируем кэш истории и статистики
       queryClient.invalidateQueries({ queryKey: chatKeys.history() });
