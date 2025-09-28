@@ -93,7 +93,7 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 	assistantMessage, err := h.openRouterSvc.SendMessage(history)
 	if err != nil {
 		log.Printf("Error sending message to OpenRouter: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get AI response"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Превышен лимит запросов к ИИ. Попробуйте позже."})
 		return
 	}
 

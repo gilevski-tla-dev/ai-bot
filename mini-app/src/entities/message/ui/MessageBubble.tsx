@@ -13,7 +13,9 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
       style={{
         alignSelf: isUser ? "flex-end" : "flex-start",
         maxWidth: "80%",
-        marginBottom: "0.5rem",
+        marginBottom: "0.75rem",
+        marginLeft: isUser ? "auto" : "0",
+        marginRight: isUser ? "0" : "auto",
       }}
     >
       <Box
@@ -22,6 +24,7 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
           borderRadius: "12px",
           backgroundColor: isUser ? "var(--accent-9)" : "var(--gray-3)",
           color: isUser ? "var(--accent-contrast)" : "var(--gray-12)",
+          wordWrap: "break-word",
         }}
       >
         <Text size="2">{message.content}</Text>

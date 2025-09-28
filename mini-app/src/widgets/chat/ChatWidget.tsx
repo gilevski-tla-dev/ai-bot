@@ -1,4 +1,5 @@
 import { Box, Text } from "@radix-ui/themes";
+import { useState, useMemo } from "react";
 import {
   useSendMessage,
   useChatHistory,
@@ -7,20 +8,47 @@ import {
 import { MessageList } from "../../entities/message/ui/MessageList";
 import { ChatInput } from "../../features/chat/ui/ChatInput";
 import { UserStats } from "../../features/chat/ui/UserStats";
+import { Message } from "../../entities/message/types";
 
 export const ChatWidget = () => {
   const { data: messages = [] } = useChatHistory();
   const { data: stats } = useUserStats();
   const sendMessageMutation = useSendMessage();
 
+  // Локальное состояние для временных сообщений
+  const [tempMessages, setTempMessages] = useState<Message[]>([]);
+
+  // Объединяем сообщения из сервера с временными
+  const allMessages = useMemo(() => {
+    return [...messages, ...tempMessages];
+  }, [messages, tempMessages]);
+
   const handleSendMessage = async (message: string) => {
+    // Создаем временное сообщение пользователя
+    const tempUserMessage: Message = {
+      id: Date.now(), // Временный ID
+      user_id: 0, // Будет обновлено с сервера
+      role: "user",
+      content: message,
+      created_at: new Date().toISOString(),
+    };
+
+    // Сразу добавляем сообщение пользователя в локальное состояние
+    setTempMessages([tempUserMessage]);
+
     try {
       await sendMessageMutation.mutateAsync({ message });
 
-      // Добавляем сообщение пользователя и ответ ассистента в локальное состояние
-      // Это будет обновлено автоматически через invalidation в useSendMessage
+      // Очищаем временные сообщения после успешной отправки
+      // Данные обновятся автоматически через invalidation в useSendMessage
+      setTempMessages([]);
     } catch (error) {
       console.error("Failed to send message:", error);
+      // Убираем временное сообщение при ошибке
+      setTempMessages([]);
+
+      // Можно добавить уведомление пользователю об ошибке
+      // Например, через toast или другой UI компонент
     }
   };
 
@@ -54,7 +82,10 @@ export const ChatWidget = () => {
 
       {/* Messages area */}
       <Box style={{ flex: 1, overflow: "hidden" }}>
-        <MessageList messages={messages} isLoading={isLoading} />
+        <MessageList
+          messages={allMessages}
+          isLoading={isLoading && tempMessages.length > 0}
+        />
       </Box>
 
       {/* Input area */}

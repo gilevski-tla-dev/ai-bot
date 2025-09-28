@@ -5,9 +5,11 @@ import {
   Message,
   UserStats,
 } from "../../entities/message/types";
+import { useNotificationStore } from "../store/notificationStore";
 
 class ApiClient {
   private client: AxiosInstance;
+  private notificationStore: ReturnType<typeof useNotificationStore.getState>;
 
   constructor() {
     this.client = axios.create({
@@ -18,6 +20,7 @@ class ApiClient {
       },
     });
 
+    this.notificationStore = useNotificationStore.getState();
     this.setupInterceptors();
   }
 
@@ -38,10 +41,35 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
-          // Обработка ошибки аутентификации
-          console.error("Authentication error:", error.response.data);
+        const status = error.response?.status;
+        const errorData = error.response?.data;
+
+        // Определяем тип уведомления на основе статуса
+        let notificationType: "error" | "warning" | "info" = "error";
+        if (status === 429) {
+          notificationType = "warning"; // Too Many Requests
+        } else if (status >= 500) {
+          notificationType = "error"; // Server errors
+        } else if (status >= 400) {
+          notificationType = "error"; // Client errors
         }
+
+        // Извлекаем сообщение об ошибке
+        let errorMessage = "Произошла ошибка";
+        if (errorData?.error) {
+          errorMessage = errorData.error;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        // Показываем уведомление
+        this.notificationStore.addNotification(errorMessage, notificationType);
+
+        if (status === 401) {
+          // Обработка ошибки аутентификации
+          console.error("Authentication error:", errorData);
+        }
+
         return Promise.reject(error);
       }
     );
