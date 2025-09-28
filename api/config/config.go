@@ -23,6 +23,9 @@ type Config struct {
 
 	// API
 	APIPort string
+
+	// Development
+	DevMode bool
 }
 
 // Load загружает конфигурацию из переменных окружения
@@ -45,6 +48,9 @@ func Load() *Config {
 
 		// API
 		APIPort: getEnv("API_PORT", "8080"),
+
+		// Development
+		DevMode: getEnv("DEV_MODE", "false") == "true",
 	}
 }
 

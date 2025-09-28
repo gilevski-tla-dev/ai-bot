@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db-dev
+    restart: unless-stopped
+    env_file:
+      - .env.dev
+    environment:
+      POSTGRES_DB: telegram_bot
+      POSTGRES_USER: postgres
+      # здесь пароль гарантированно берётся из .env.dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+
+  api:
+    image: golang:1.24-alpine
+    container_name: telegram-api-dev
+    working_dir: /app
+    command: sh -c "go mod download && go run ./main.go"
+    volumes:
+      - ./api:/app
+    env_file:
+      - .env.dev
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: telegram_bot
+      API_PORT: "8080"
+      DEV_MODE: ${DEV_MODE}
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+
+  mini-app:
+    image: node:20-alpine
+    container_name: mini-app-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./mini-app:/app
+    env_file:
+      - .env.dev
+    environment:
+      VITE_API_PROXY_TARGET: http://api:8080
+    depends_on:
+      - api
+    ports:
+      - "5173:5173"
+
+  telegram-bot:
+    image: golang:1.24-alpine
+    container_name: telegram-bot-dev
+    working_dir: /app
+    command: sh -c "go mod download && go run ./main.go"
+    volumes:
+      - ./telegram-bot:/app
+    env_file:
+      - .env.dev
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: telegram_bot
+    depends_on:
+      - postgres
+
+volumes:
+  postgres-data-dev:
+  pgadmin-data-dev:

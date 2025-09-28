@@ -58,11 +58,25 @@ func main() {
 
 	// Защищенные маршруты
 	api := r.Group("/api")
-	api.Use(middleware.AuthMiddleware(telegramAuthSvc))
+
+	// Выбираем middleware в зависимости от режима
+	if cfg.DevMode {
+		log.Println("Running in DEV mode - authentication disabled")
+		api.Use(middleware.DevAuthMiddleware())
+	} else {
+		api.Use(middleware.AuthMiddleware(telegramAuthSvc))
+	}
+
 	{
 		api.POST("/chat", chatHandler.SendMessage)
 		api.GET("/history", chatHandler.GetHistory)
 		api.GET("/stats", chatHandler.GetStats)
+		api.GET("/health", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"status":  "ok",
+				"service": "telegram-api",
+			})
+		})
 	}
 
 	// Запускаем сервер

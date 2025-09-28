@@ -46,6 +46,21 @@ func AuthMiddleware(telegramAuth *services.TelegramAuthService) gin.HandlerFunc 
 	}
 }
 
+// DevAuthMiddleware middleware для dev режима - пропускает аутентификацию
+func DevAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Устанавливаем тестовые данные пользователя для dev режима
+		c.Set("user_id", int64(123456789)) // Тестовый user ID
+		c.Set("username", "dev_user")
+		c.Set("first_name", "Dev")
+		c.Set("last_name", "User")
+
+		log.Printf("Dev auth middleware: set test UserID=123456789 in context")
+
+		c.Next()
+	}
+}
+
 // CORSMiddleware middleware для CORS
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
