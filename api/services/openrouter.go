@@ -79,7 +79,7 @@ func (s *OpenRouterService) sendMessageAttempt(messages []*models.Message) (*mod
 	request := models.OpenRouterRequest{
 		Model:       s.model,
 		Messages:    make([]models.Message, len(messages)),
-		MaxTokens:   500,
+		MaxTokens:   2000, // Увеличиваем лимит токенов для более полных ответов
 		Temperature: 0.7,
 	}
 

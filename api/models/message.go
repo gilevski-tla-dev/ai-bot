@@ -15,7 +15,7 @@ type Message struct {
 
 // ChatRequest представляет запрос на отправку сообщения
 type ChatRequest struct {
-	Message string `json:"message" binding:"required,max=300"`
+	Message string `json:"message" binding:"required,max=1000"`
 }
 
 // ChatResponse представляет ответ от API
@@ -40,6 +40,7 @@ type OpenRouterRequest struct {
 	Messages    []Message `json:"messages"`
 	MaxTokens   int       `json:"max_tokens,omitempty"`
 	Temperature float64   `json:"temperature,omitempty"`
+	Stream      bool      `json:"stream,omitempty"`
 }
 
 // OpenRouterResponse представляет ответ от OpenRouter API
