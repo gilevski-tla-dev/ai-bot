@@ -93,7 +93,15 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 	assistantMessage, err := h.openRouterSvc.SendMessage(history)
 	if err != nil {
 		log.Printf("Error sending message to OpenRouter: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Превышен лимит запросов к ИИ. Попробуйте позже."})
+
+		// Определяем тип ошибки и возвращаем соответствующее сообщение
+		errorMsg := "Сервис ИИ временно недоступен. Попробуйте позже."
+		if err.Error() == "context deadline exceeded" ||
+			err.Error() == "Client.Timeout or context cancellation while reading body" {
+			errorMsg = "Превышено время ожидания ответа от ИИ. Попробуйте позже."
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errorMsg})
 		return
 	}
 

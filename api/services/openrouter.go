@@ -14,35 +14,67 @@ import (
 
 // OpenRouterService сервис для работы с OpenRouter API
 type OpenRouterService struct {
-	apiKey string
-	url    string
-	model  string
-	client *http.Client
+	apiKey     string
+	url        string
+	model      string
+	timeout    int
+	maxRetries int
+	client     *http.Client
 }
 
 // NewOpenRouterService создает новый сервис OpenRouter
 func NewOpenRouterService(apiKey, url, model string) *OpenRouterService {
 	return &OpenRouterService{
-		apiKey: apiKey,
-		url:    url,
-		model:  model,
+		apiKey:     apiKey,
+		url:        url,
+		model:      model,
+		timeout:    30, // 30 секунд таймаут
+		maxRetries: 3,  // 3 попытки
 		client: &http.Client{
-			Timeout: 15 * time.Second,
+			Timeout: 30 * time.Second,
 			Transport: &http.Transport{
 				DialContext: (&net.Dialer{
-					Timeout:   5 * time.Second,
+					Timeout:   10 * time.Second, // Увеличиваем таймаут подключения
 					KeepAlive: 30 * time.Second,
 				}).DialContext,
-				MaxIdleConns:        10,
-				IdleConnTimeout:     90 * time.Second,
-				TLSHandshakeTimeout: 5 * time.Second,
+				MaxIdleConns:          20, // Увеличиваем пул соединений
+				MaxIdleConnsPerHost:   10,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second, // Увеличиваем таймаут TLS
+				ResponseHeaderTimeout: 15 * time.Second, // Добавляем таймаут заголовков
 			},
 		},
 	}
 }
 
-// SendMessage отправляет сообщение в OpenRouter и получает ответ
+// SendMessage отправляет сообщение в OpenRouter и получает ответ с retry логикой
 func (s *OpenRouterService) SendMessage(messages []*models.Message) (*models.Message, error) {
+	const baseDelay = 1 * time.Second
+
+	for attempt := 0; attempt < s.maxRetries; attempt++ {
+		message, err := s.sendMessageAttempt(messages)
+		if err == nil {
+			return message, nil
+		}
+
+		// Логируем попытку
+		fmt.Printf("OpenRouter attempt %d/%d failed: %v\n", attempt+1, s.maxRetries, err)
+
+		// Если это последняя попытка, возвращаем ошибку
+		if attempt == s.maxRetries-1 {
+			return nil, fmt.Errorf("failed after %d attempts: %w", s.maxRetries, err)
+		}
+
+		// Экспоненциальная задержка с jitter
+		delay := baseDelay * time.Duration(1<<attempt) // 1s, 2s, 4s
+		time.Sleep(delay)
+	}
+
+	return nil, fmt.Errorf("unexpected error in retry loop")
+}
+
+// sendMessageAttempt выполняет одну попытку отправки сообщения
+func (s *OpenRouterService) sendMessageAttempt(messages []*models.Message) (*models.Message, error) {
 	// Подготавливаем запрос
 	request := models.OpenRouterRequest{
 		Model:       s.model,
