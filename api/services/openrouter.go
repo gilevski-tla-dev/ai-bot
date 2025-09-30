@@ -28,10 +28,10 @@ func NewOpenRouterService(apiKey, url, model string) *OpenRouterService {
 		apiKey:     apiKey,
 		url:        url,
 		model:      model,
-		timeout:    30, // 30 секунд таймаут
+		timeout:    60, // 60 секунд таймаут для сложных запросов
 		maxRetries: 3,  // 3 попытки
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second, // Увеличиваем HTTP таймаут
 			Transport: &http.Transport{
 				DialContext: (&net.Dialer{
 					Timeout:   10 * time.Second, // Увеличиваем таймаут подключения

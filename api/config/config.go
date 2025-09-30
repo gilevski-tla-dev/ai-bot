@@ -41,7 +41,7 @@ func Load() *Config {
 		// OpenRouter
 		OpenRouterAPIKey: getEnv("OPENROUTER_API_KEY", ""),
 		OpenRouterURL:    getEnv("OPENROUTER_URL", "https://openrouter.ai/api/v1"),
-		AIModel:          getEnv("AI_MODEL", "deepseek/deepseek-chat-v3.1:free"),
+		AIModel:          getEnv("AI_MODEL", "deepseek/deepseek-v3.1-terminus"),
 
 		// Telegram
 		TelegramBotToken: getEnv("TELEGRAM_BOT_TOKEN", ""),
